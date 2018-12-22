@@ -6,22 +6,57 @@ Sample codes for RabbitMQ
 
 ```
 $ docker pull rabbitmq:3.6
-$ docker run -d -p 5672:5672 -p 15672:15672 --name tis-rabbitmq rabbitmq:3.6
-$ docker exec -it tis-rabbitmq rabbitmq-plugins enable rabbitmq_management
+$ docker run -d -p 5672:5672 -p 15672:15672 --name <your_container_name> rabbitmq:3.6
+$ docker start <your_container_name>
+$ docker exec -it <your_container_name> rabbitmq-plugins enable rabbitmq_management
 ```
 
+We can enable the RabbitMQ Management plugin later by,
+
+```
+$ rabbitmq-plugins enable rabbitmq_management
+$ rabbitmq-plugins list -e
+ Configured: E = explicitly enabled; e = implicitly enabled
+ | Status:   * = running on rabbit@1f3f73f8659e
+ |/
+[e*] amqp_client               3.6.16
+[e*] cowboy                    1.0.4
+[e*] cowlib                    1.0.2
+[E*] rabbitmq_management       3.6.16
+[e*] rabbitmq_management_agent 3.6.16
+[e*] rabbitmq_web_dispatch     3.6.16
+```
+
+
+> To skip the steps of enabling RabbitMQ Management plugin, use the docker image with tag name `<version>-management` 
+
 Got to http://localhost:15672 for the RabbitMQ Management UI.
-The localhost allows the default user/pwd: guest/guest, to login.
-However, it's recommened to change the password or permissions of "guest".
+There is a default user/pwd: guest/guest, is allowed to login thru localhost.
+However, it's recommened to delete "guest" or change the password/permissions of "guest".
 
 
 
-First add user and grant it as Admin:
+
+## Create new Virtual host
+
+
+Create a new virtual host named "vhost_demo" by
+
+```
+$ rabbitmqctl add_vhost vhost_demo
+$ rabbitmqctl list_vhosts
+/
+vhost_demo
+```
+
+
+## Create new User (as Administrator)
+
 
 ```
 $ rabbitmqctl add_user rabbitmquser rabbitmqpwd
 $ rabbitmqctl set_user_tags rabbitmquser administrator
-$ rabbitmqctl set_permissions -p / rabbitmquser ".*" ".*" ".*"
+$ rabbitmqctl set_permissions -p vhost_demo rabbitmquser ".*" ".*" ".*"
 
 $ rabbitmqctl list_users
 
@@ -32,24 +67,16 @@ guest   [administrator]
 
 
 
-(1) 超級管理員(administrator)
+### Delete the queue 
 
-可登陸管理控制枱(啟用management plugin的情況下)，可查看所有的信息，並且可以對用户，策略(policy)進行操作。
 
-(2) 監控者(monitoring)
+Delete the queue on RabbitMQ Management UI:
 
-可登陸管理控制枱(啟用management plugin的情況下)，同時可以查看rabbitmq節點的相關信息(進程數，內存使用情況，磁盤使用情況等)
 
-(3) 策略制定者(policymaker)
 
-可登陸管理控制枱(啟用management plugin的情況下), 同時可以對policy進行管理。但無法查看節點的相關信息(上圖紅框標識的部分)。
 
-與administrator的對比，administrator能看到這些內容
+Or thru `rabbitmqadmin`
 
-(4) 普通管理者(management)
-
-僅可登陸管理控制枱(啟用management plugin的情況下)，無法看到節點信息，也無法對策略進行管理。
-
-(5) 其他
-
-無法登陸管理控制枱，通常就是普通的生產者和消費者。
+```
+$ rabbitmqadmin delete queue name=<queue_name>
+```
